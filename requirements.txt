@@ -1,0 +1,6 @@
+# PDF to JSON Converter dependencies
+anthropic>=0.40.0
+python-dotenv>=1.0.0
+pdf2image>=1.16.3
+inquirer>=3.1.0
+Pillow>=10.0.0
