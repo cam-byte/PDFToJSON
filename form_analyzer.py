@@ -86,12 +86,12 @@ FORM_ANALYSIS_PROMPT = """Analyze this PDF form and generate a complete JSON str
 
 **VALID LAYOUT GROUPS:**
 
-1. **two_columns** - Use when the PDF shows two columns of similar fields side-by-side (e.g., two columns of Yes/No radio questions, or two columns of checkboxes). This is the MOST COMMON group for medical history forms.
+1. **two_columns** - Use for lists of 2-23 similar Yes/No radio questions or checkboxes.
    {{"name": "two_columns", "type": "group_start"}}
-   ... put ALL related fields here (both columns worth) ...
+   ... put ALL related fields here ...
    {{"type": "group_end"}}
 
-2. **four_columns** - Use when the PDF shows four columns of similar fields (rare, usually for very compact lists).
+2. **four_columns** - Use for lists of 24 or more similar Yes/No radio questions. This creates a more compact layout for long medical history sections.
    {{"name": "four_columns", "type": "group_start"}}
    ... put ALL related fields here ...
    {{"type": "group_end"}}
@@ -119,28 +119,32 @@ FORM_ANALYSIS_PROMPT = """Analyze this PDF form and generate a complete JSON str
 
 ## HOW TO USE COLUMN GROUPS
 
-**Example: PDF shows two columns of Yes/No medical questions**
+**Threshold rule: Count the Yes/No radio questions in a section:**
+- 2-23 radio questions → use "two_columns"
+- 24+ radio questions → use "four_columns" (more compact for long medical history lists)
 
-If the PDF shows:
-```
-Abnormal Bleeding    YES NO     Tuberculosis         YES NO
-Blood Disease        YES NO     Autoimmune Disease   YES NO
-Blood Transfusion    YES NO     Cancer               YES NO
-...
-```
+**Note:** It's fine to include 1-2 text fields (like "Type and Date:" follow-ups) within a column group. Base your column choice on the radio button count, not strict uniformity.
 
-Use ONE "two_columns" group containing ALL the questions:
-{{"name": "two_columns", "type": "group_start"}}
+**Example: PDF shows a long list of Yes/No medical questions (24+)**
+
+If the PDF shows a medical history section with many conditions (Abnormal Bleeding, Blood Disease, Tuberculosis, Heart Disease, etc.), count them. If there are 24 or more, use four_columns:
+
+{{"name": "four_columns", "type": "group_start"}}
 {{"name": "abnormal_bleeding", "label": "Abnormal Bleeding", "email_label": "Abnormal Bleeding", "type": "radio", "option": {{"yes": "Yes", "no": "No"}}}}
 {{"name": "blood_disease", "label": "Blood Disease", "email_label": "Blood Disease", "type": "radio", "option": {{"yes": "Yes", "no": "No"}}}}
-{{"name": "blood_transfusion", "label": "Blood Transfusion", "email_label": "Blood Transfusion", "type": "radio", "option": {{"yes": "Yes", "no": "No"}}}}
-{{"name": "tuberculosis", "label": "Tuberculosis", "email_label": "Tuberculosis", "type": "radio", "option": {{"yes": "Yes", "no": "No"}}}}
-{{"name": "autoimmune_disease", "label": "Autoimmune Disease", "email_label": "Autoimmune Disease", "type": "radio", "option": {{"yes": "Yes", "no": "No"}}}}
-{{"name": "cancer", "label": "Cancer", "email_label": "Cancer", "type": "radio", "option": {{"yes": "Yes", "no": "No"}}}}
-... continue with all questions ...
+... all 24+ conditions ...
 {{"type": "group_end"}}
 
-The PDF generator will automatically arrange them in two columns.
+**Example: Shorter list (under 24 questions)**
+
+For allergy sections or shorter condition lists with fewer than 24 items, use two_columns:
+
+{{"name": "two_columns", "type": "group_start"}}
+{{"name": "allergy_aspirin", "label": "Aspirin", "email_label": "Allergy - Aspirin", "type": "radio", "option": {{"yes": "Yes", "no": "No"}}}}
+... up to 23 items ...
+{{"type": "group_end"}}
+
+The PDF generator will automatically arrange fields into the appropriate columns.
 
 ---
 
@@ -149,10 +153,10 @@ The PDF generator will automatically arrange them in two columns.
 1. Field naming: lowercase, underscores, no special characters
 2. Every group_start MUST have a matching group_end
 3. **ONLY use the exact group names listed above (two_columns, four_columns, name_details, address_details, form_container, form_content_container). Do NOT invent custom group names.**
-4. "If yes, explain" patterns - Keep radio and follow-up text field OUTSIDE column groups
-5. Column groups are for SIMILAR field types only - don't mix radio with text fields
+4. "If yes, explain" patterns - A few follow-up text fields within a column group are OK, but lengthy explanations should go outside
+5. Column groups should be MOSTLY similar field types - 1-2 text fields mixed in with radios is fine
 6. Return ONLY valid JSON - no comments, no trailing commas
-7. When a PDF shows two columns of Yes/No questions, use "two_columns" with ALL questions inside one group
+7. **COUNT Yes/No questions in a section: use "two_columns" for 2-23 items, use "four_columns" for 24+ items**
 
 Now analyze the PDF form image(s) and generate the complete JSON structure."""
 
