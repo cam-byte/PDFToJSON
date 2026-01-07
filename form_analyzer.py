@@ -80,23 +80,67 @@ FORM_ANALYSIS_PROMPT = """Analyze this PDF form and generate a complete JSON str
 
 ---
 
-## LAYOUT GROUPS
+## LAYOUT GROUPS - ONLY USE THESE EXACT NAMES
 
-**Name fields** - Only when form has SEPARATE First, Last, Middle fields:
-{{"name": "*name_details", "type": "group_start"}}
-... name fields ...
+**CRITICAL: You may ONLY use these exact group names. Do NOT invent new group names like "allergies_column1", "medical_conditions", etc. Unrecognized group names will be IGNORED and fields will not be grouped.**
+
+**VALID LAYOUT GROUPS:**
+
+1. **two_columns** - Use when the PDF shows two columns of similar fields side-by-side (e.g., two columns of Yes/No radio questions, or two columns of checkboxes). This is the MOST COMMON group for medical history forms.
+   {{"name": "two_columns", "type": "group_start"}}
+   ... put ALL related fields here (both columns worth) ...
+   {{"type": "group_end"}}
+
+2. **four_columns** - Use when the PDF shows four columns of similar fields (rare, usually for very compact lists).
+   {{"name": "four_columns", "type": "group_start"}}
+   ... put ALL related fields here ...
+   {{"type": "group_end"}}
+
+3. **name_details** - ONLY when form has EXACTLY 3 separate name fields: Last Name, First Name, Middle Initial
+   {{"name": "*name_details", "type": "group_start"}}
+   {{"name": "last_name", "label": "Last Name", ...}}
+   {{"name": "first_name", "label": "First Name", ...}}
+   {{"name": "middle_initial", "label": "M.I.", ...}}
+   {{"type": "group_end"}}
+
+4. **address_details** - ONLY when form needs EXACTLY 4 address fields: Street, City, State, Zip
+   {{"name": "*address_details", "type": "group_start"}}
+   {{"name": "mailing_address", "label": "Mailing Address", ...}}
+   {{"name": "city", "label": "City", ...}}
+   {{"name": "state", "label": "State", ...}}
+   {{"name": "zip", "label": "Zip", ...}}
+   {{"type": "group_end"}}
+
+**Container groups (for structure only, no layout effect):**
+- form_container
+- form_content_container
+
+---
+
+## HOW TO USE COLUMN GROUPS
+
+**Example: PDF shows two columns of Yes/No medical questions**
+
+If the PDF shows:
+```
+Abnormal Bleeding    YES NO     Tuberculosis         YES NO
+Blood Disease        YES NO     Autoimmune Disease   YES NO
+Blood Transfusion    YES NO     Cancer               YES NO
+...
+```
+
+Use ONE "two_columns" group containing ALL the questions:
+{{"name": "two_columns", "type": "group_start"}}
+{{"name": "abnormal_bleeding", "label": "Abnormal Bleeding", "email_label": "Abnormal Bleeding", "type": "radio", "option": {{"yes": "Yes", "no": "No"}}}}
+{{"name": "blood_disease", "label": "Blood Disease", "email_label": "Blood Disease", "type": "radio", "option": {{"yes": "Yes", "no": "No"}}}}
+{{"name": "blood_transfusion", "label": "Blood Transfusion", "email_label": "Blood Transfusion", "type": "radio", "option": {{"yes": "Yes", "no": "No"}}}}
+{{"name": "tuberculosis", "label": "Tuberculosis", "email_label": "Tuberculosis", "type": "radio", "option": {{"yes": "Yes", "no": "No"}}}}
+{{"name": "autoimmune_disease", "label": "Autoimmune Disease", "email_label": "Autoimmune Disease", "type": "radio", "option": {{"yes": "Yes", "no": "No"}}}}
+{{"name": "cancer", "label": "Cancer", "email_label": "Cancer", "type": "radio", "option": {{"yes": "Yes", "no": "No"}}}}
+... continue with all questions ...
 {{"type": "group_end"}}
 
-**Address fields** - ALWAYS expand single "Address" into 4 fields:
-{{"name": "*address_details", "type": "group_start"}}
-{{"name": "mailing_address", "label": "Mailing Address", "email_label": "Mailing Address", "type": "text"}}
-{{"name": "city", "label": "City", "email_label": "City", "type": "text"}}
-{{"name": "state", "label": "State", "email_label": "State", "type": "text"}}
-{{"name": "zip", "label": "Zip", "email_label": "Zip", "type": "text"}}
-{{"type": "group_end"}}
-
-**two_columns** - For condensing Yes/No radio question lists
-**four_columns** - For long lists of medical conditions (10+ items)
+The PDF generator will automatically arrange them in two columns.
 
 ---
 
@@ -104,9 +148,11 @@ FORM_ANALYSIS_PROMPT = """Analyze this PDF form and generate a complete JSON str
 
 1. Field naming: lowercase, underscores, no special characters
 2. Every group_start MUST have a matching group_end
-3. "If yes, explain" patterns - Keep radio and follow-up text field OUTSIDE column groups
-4. Column groups are for SIMILAR field types only - don't mix radio with text fields
-5. Return ONLY valid JSON - no comments, no trailing commas
+3. **ONLY use the exact group names listed above (two_columns, four_columns, name_details, address_details, form_container, form_content_container). Do NOT invent custom group names.**
+4. "If yes, explain" patterns - Keep radio and follow-up text field OUTSIDE column groups
+5. Column groups are for SIMILAR field types only - don't mix radio with text fields
+6. Return ONLY valid JSON - no comments, no trailing commas
+7. When a PDF shows two columns of Yes/No questions, use "two_columns" with ALL questions inside one group
 
 Now analyze the PDF form image(s) and generate the complete JSON structure."""
 
